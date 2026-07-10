@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Consignment Manager</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #ffffff; --bg2: #f5f5f3; --bg3: #ededea;
+    --text: #1a1a1a; --text2: #6b6b6b; --text3: #999;
+    --border: rgba(0,0,0,0.12); --border2: rgba(0,0,0,0.22);
+    --success: #3B6D11; --success-bg: #EAF3DE;
+    --danger: #A32D2D; --danger-bg: #FCEBEB;
+    --info: #185FA5; --info-bg: #E6F1FB;
+    --radius: 8px; --radius-lg: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1c; --bg2: #252525; --bg3: #2e2e2e;
+      --text: #e8e8e8; --text2: #9a9a9a; --text3: #666;
+      --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.2);
+      --success: #97C459; --success-bg: #173404;
+      --danger: #F09595; --danger-bg: #501313;
+      --info: #85B7EB; --info-bg: #042C53;
+    }
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg3); color: var(--text); font-size: 14px; line-height: 1.5; }
+  .app { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
+  .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 12px; }
+  .header h1 { font-size: 22px; font-weight: 600; }
+  .header p { font-size: 13px; color: var(--text2); margin-top: 2px; }
+  .tabs { display: flex; gap: 4px; background: var(--bg2); border-radius: var(--radius); padding: 4px; margin-bottom: 1.5rem; }
+  .tab { flex: 1; padding: 9px 12px; border: none; background: transparent; border-radius: 6px; font-size: 13px; font-weight: 500; color: var(--text2); cursor: pointer; transition: all 0.15s; }
+  .tab.active { background: var(--bg); color: var(--text); border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .tab:hover:not(.active) { color: var(--text); background: var(--bg3); }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
+  .stat { background: var(--bg2); border-radius: var(--radius); padding: 14px 16px; }
+  .stat-label { font-size: 12px; color: var(--text2); margin-bottom: 6px; }
+  .stat-val { font-size: 22px; font-weight: 600; }
+  .stat-sub { font-size: 11px; color: var(--text2); margin-top: 2px; }
+  .card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1rem; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label { font-size: 12px; color: var(--text2); font-weight: 500; }
+  .field input, .field select, .field textarea {
+    padding: 8px 10px; border: 1px solid var(--border2); border-radius: var(--radius);
+    background: var(--bg); color: var(--text); font-size: 14px; font-family: inherit;
+    transition: border-color 0.15s;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: #378ADD; box-shadow: 0 0 0 3px rgba(55,138,221,0.15); }
+  .field textarea { resize: vertical; min-height: 70px; }
+  .btn { padding: 8px 18px; border-radius: var(--radius); font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid var(--border2); background: transparent; color: var(--text); transition: background 0.15s; font-family: inherit; }
+  .btn:hover { background: var(--bg2); }
+  .btn-primary { background: var(--text); color: var(--bg); border-color: transparent; }
+  .btn-primary:hover { opacity: 0.85; }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+  .btn-danger { color: var(--danger); border-color: rgba(163,45,45,0.35); }
+  .btn-danger:hover { background: var(--danger-bg); }
+  .btn-success { color: var(--success); border-color: rgba(59,109,17,0.35); }
+  .btn-success:hover { background: var(--success-bg); }
+  .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 1.25rem; }
+  .tbl-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
+  th { text-align: left; padding: 9px 10px; font-size: 12px; font-weight: 600; color: var(--text2); border-bottom: 1px solid var(--border); white-space: nowrap; }
+  td { padding: 10px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--bg2); }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .badge-active { background: var(--success-bg); color: var(--success); }
+  .badge-sold { background: var(--info-bg); color: var(--info); }
+  .badge-expired { background: #FAEEDA; color: #854F0B; }
+  .badge-withdrawn { background: var(--bg2); color: var(--text2); border: 1px solid var(--border); }
+  .search-row { display: flex; gap: 10px; margin-bottom: 1rem; align-items: center; flex-wrap: wrap; }
+  .search-row input, .search-row select {
+    padding: 8px 10px; border: 1px solid var(--border2); border-radius: var(--radius);
+    background: var(--bg); color: var(--text); font-size: 13px; font-family: inherit;
+  }
+  .search-row input { flex: 1; min-width: 180px; }
+  .empty { text-align: center; padding: 3rem; color: var(--text2); }
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
+  .modal { background: var(--bg); border-radius: var(--radius-lg); padding: 1.75rem; width: 540px; max-width: 100%; border: 1px solid var(--border); max-height: 90vh; overflow-y: auto; }
+  .modal h2 { font-size: 17px; font-weight: 600; margin-bottom: 1.25rem; }
+  .comm-box { background: var(--bg2); border-radius: var(--radius); padding: 1rem; margin-top: 1rem; }
+  .comm-row { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; }
+  .comm-row.total { font-weight: 600; border-top: 1px solid var(--border); padding-top: 10px; margin-top: 6px; }
+  .report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width: 600px) { .form-grid, .report-grid { grid-template-columns: 1fr; } }
+  .section-title { font-size: 11px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 12px; }
+  .row-actions { display: flex; gap: 4px; flex-wrap: wrap; }
+  .icon-btn { width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius); border: 1px solid rgba(163,45,45,0.35); background: transparent; cursor: pointer; color: var(--danger); font-size: 15px; transition: background 0.15s; }
+  .icon-btn:hover { background: var(--danger-bg); }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="header">
+    <div>
+      <h1>🏄 Consignment Manager</h1>
+      <p>20% store commission · 80% to seller</p>
+    </div>
+    <button class="btn btn-primary" onclick="openAddModal()">+ Add Item</button>
+  </div>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('inventory', this)">📦 Inventory</button>
+    <button class="tab" onclick="switchTab('sold', this)">✅ Sold Items</button>
+    <button class="tab" onclick="switchTab('reports', this)">📊 Reports</button>
+  </div>
+
+  <div id="tab-inventory">
+    <div class="search-row">
+      <input type="text" id="search" placeholder="Search by name or product…" oninput="renderInventory()">
+      <select onchange="filterStatus=this.value; renderInventory()">
+        <option value="">All statuses</option>
+        <option value="active">Active</option>
+        <option value="expired">Expired</option>
+        <option value="withdrawn">Withdrawn</option>
+      </select>
+    </div>
+    <div class="card" style="padding:0; overflow:hidden;">
+      <div class="tbl-wrap">
+        <table>
+          <colgroup>
+            <col style="width:13%"><col style="width:15%"><col style="width:9%"><col style="width:9%"><col style="width:9%"><col style="width:10%"><col style="width:10%"><col style="width:25%">
+          </colgroup>
+          <thead><tr><th>Customer</th><th>Product</th><th>Start $</th><th>Min $</th><th>Status</th><th>Brought In</th><th>Expires</th><th>Actions</th></tr></thead>
+          <tbody id="inv-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-sold" style="display:none">
+    <div class="card" style="padding:0; overflow:hidden;">
+      <div class="tbl-wrap">
+        <table>
+          <colgroup>
+            <col style="width:12%"><col style="width:14%"><col style="width:9%"><col style="width:10%"><col style="width:10%"><col style="width:10%"><col style="width:10%"><col style="width:9%"><col style="width:16%">
+          </colgroup>
+          <thead><tr><th>Customer</th><th>Product</th><th>Sale $</th><th>Commission</th><th>Seller Gets</th><th>Brought In</th><th>Sold On</th><th>Paid Out</th><th>Actions</th></tr></thead>
+          <tbody id="sold-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-reports" style="display:none">
+    <div class="report-grid">
+      <div class="card"><p class="section-title">Top Customers by Sales</p><div id="top-customers"></div></div>
+      <div class="card"><p class="section-title">Sales by Category</p><div id="by-category"></div></div>
+    </div>
+    <div class="card"><p class="section-title">Monthly Summary</p><div id="monthly-summary"></div></div>
+  </div>
+
+  <div id="modal-container"></div>
+</div>
+
+<script>
+const COMMISSION = 0.20;
+const CATEGORIES = ['Foil','Kite','SUP','Surf'];
+const CONDITIONS = ['New','Like New','Good','Fair','Poor'];
+const STORAGE_KEY = 'consignment_manager_v1';
+
+let items = [];
+let filterStatus = '';
+
+function load() {
+  try { items = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch(e) { items = []; }
+}
+function save() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+}
+function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function fmtDate(d) {
+  if (!d) return '—';
+  const dt = new Date(d + 'T00:00:00');
+  return dt.toLocaleDateString('en-AU', {day:'2-digit', month:'short', year:'2-digit'});
+}
+function fmtMoney(n) {
+  return '$' + Number(n).toLocaleString('en-AU', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function itemStatus(item) {
+  if (item.status === 'withdrawn') return 'withdrawn';
+  if (item.status === 'sold') return 'sold';
+  if (item.expiryDate && new Date(item.expiryDate) < new Date()) return 'expired';
+  return 'active';
+}
+
+function renderStats() {
+  const active = items.filter(i => itemStatus(i) === 'active');
+  const sold = items.filter(i => itemStatus(i) === 'sold');
+  const totalSales = sold.reduce((s,i) => s + Number(i.salePrice||0), 0);
+  const unpaid = sold.filter(i => !i.paidOut).reduce((s,i) => s + Number(i.salePrice||0)*0.8, 0);
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><p class="stat-label">Active Listings</p><p class="stat-val">${active.length}</p></div>
+    <div class="stat"><p class="stat-label">Total Sales</p><p class="stat-val">${fmtMoney(totalSales)}</p></div>
+    <div class="stat"><p class="stat-label">Store Commission</p><p class="stat-val">${fmtMoney(totalSales*COMMISSION)}</p><p class="stat-sub">20% of sales</p></div>
+    <div class="stat"><p class="stat-label">Payouts Pending</p><p class="stat-val">${fmtMoney(unpaid)}</p><p class="stat-sub">owed to sellers</p></div>`;
+}
+
+function renderInventory() {
+  const q = (document.getElementById('search')?.value || '').toLowerCase();
+  const filtered = items.filter(i => {
+    const st = itemStatus(i);
+    if (st === 'sold') return false;
+    if (filterStatus && st !== filterStatus) return false;
+    if (q && !i.customerName.toLowerCase().includes(q) && !i.product.toLowerCase().includes(q)) return false;
+    return true;
+  });
+  const tbody = document.getElementById('inv-body');
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty">No items found. Click <strong>+ Add Item</strong> to get started.</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = filtered.map(item => {
+    const st = itemStatus(item);
+    return `<tr>
+      <td title="${esc(item.customerName)}">${esc(item.customerName)}</td>
+      <td title="${esc(item.product)}">${esc(item.product)}</td>
+      <td>${fmtMoney(item.startPrice)}</td>
+      <td>${fmtMoney(item.minPrice)}</td>
+      <td><span class="badge badge-${st}">${st.charAt(0).toUpperCase()+st.slice(1)}</span></td>
+      <td>${fmtDate(item.dateBroughtIn)}</td>
+      <td>${fmtDate(item.expiryDate)}</td>
+      <td><div class="row-actions">
+        <button class="btn btn-sm btn-success" onclick="openSellModal('${item.id}')">Sell</button>
+        <button class="btn btn-sm" onclick="openEditModal('${item.id}')">Edit</button>
+        <button class="btn btn-sm" onclick="withdrawItem('${item.id}')">Withdraw</button>
+        <button class="icon-btn" onclick="deleteItem('${item.id}')" title="Delete item">🗑</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderSold() {
+  const sold = items.filter(i => itemStatus(i) === 'sold');
+  const tbody = document.getElementById('sold-body');
+  if (!sold.length) { tbody.innerHTML = `<tr><td colspan="9"><div class="empty">No sales recorded yet.</div></td></tr>`; return; }
+  tbody.innerHTML = sold.map(item => {
+    const sale = Number(item.salePrice);
+    return `<tr>
+      <td title="${esc(item.customerName)}">${esc(item.customerName)}</td>
+      <td title="${esc(item.product)}">${esc(item.product)}</td>
+      <td>${fmtMoney(sale)}</td>
+      <td>${fmtMoney(sale*0.2)}</td>
+      <td>${fmtMoney(sale*0.8)}</td>
+      <td>${fmtDate(item.dateBroughtIn)}</td>
+      <td>${fmtDate(item.saleDate)}</td>
+      <td>${item.paidOut ? '<span class="badge badge-active">Paid</span>' : '<span class="badge badge-withdrawn">Pending</span>'}</td>
+      <td><div class="row-actions">
+        ${!item.paidOut ? `<button class="btn btn-sm btn-success" onclick="markPaid('${item.id}')">Pay Out</button>` : ''}
+        <button class="icon-btn" onclick="deleteItem('${item.id}')" title="Delete record">🗑</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+function renderReports() {
+  const sold = items.filter(i => itemStatus(i) === 'sold');
+  const byCustomer = {};
+  sold.forEach(i => { byCustomer[i.customerName] = (byCustomer[i.customerName]||0) + Number(i.salePrice); });
+  const topC = Object.entries(byCustomer).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const maxC = topC[0]?.[1] || 1;
+  document.getElementById('top-customers').innerHTML = topC.length ? topC.map(([name,amt]) => `
+    <div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>${esc(name)}</span><span style="color:var(--text2)">${fmtMoney(amt)}</span></div>
+      <div style="height:7px;background:var(--bg3);border-radius:4px"><div style="height:100%;width:${(amt/maxC*100).toFixed(1)}%;background:#378ADD;border-radius:4px"></div></div>
+    </div>`).join('') : '<p style="color:var(--text2);font-size:13px">No sales yet.</p>';
+
+  const byCat = {};
+  sold.forEach(i => { byCat[i.category||'Other'] = (byCat[i.category||'Other']||0) + Number(i.salePrice); });
+  const cats = Object.entries(byCat).sort((a,b)=>b[1]-a[1]);
+  const maxCat = cats[0]?.[1] || 1;
+  document.getElementById('by-category').innerHTML = cats.length ? cats.map(([cat,amt]) => `
+    <div style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>${esc(cat)}</span><span style="color:var(--text2)">${fmtMoney(amt)}</span></div>
+      <div style="height:7px;background:var(--bg3);border-radius:4px"><div style="height:100%;width:${(amt/maxCat*100).toFixed(1)}%;background:#1D9E75;border-radius:4px"></div></div>
+    </div>`).join('') : '<p style="color:var(--text2);font-size:13px">No sales yet.</p>';
+
+  const byMonth = {};
+  sold.forEach(i => {
+    const m = i.saleDate ? i.saleDate.slice(0,7) : 'Unknown';
+    if (!byMonth[m]) byMonth[m] = {sales:0, count:0};
+    byMonth[m].sales += Number(i.salePrice); byMonth[m].count++;
+  });
+  const months = Object.entries(byMonth).sort((a,b)=>b[0].localeCompare(a[0]));
+  document.getElementById('monthly-summary').innerHTML = months.length ? `
+    <table><thead><tr><th>Month</th><th>Items Sold</th><th>Total Sales</th><th>Commission (20%)</th><th>Paid to Sellers</th></tr></thead>
+    <tbody>${months.map(([m,d])=>`<tr><td>${m}</td><td>${d.count}</td><td>${fmtMoney(d.sales)}</td><td>${fmtMoney(d.sales*0.2)}</td><td>${fmtMoney(d.sales*0.8)}</td></tr>`).join('')}</tbody></table>`
+    : '<p style="color:var(--text2);font-size:13px">No sales yet.</p>';
+}
+
+function renderAll() { renderStats(); renderInventory(); renderSold(); renderReports(); }
+
+function switchTab(name, el) {
+  ['inventory','sold','reports'].forEach(t => { document.getElementById('tab-'+t).style.display = t===name?'':'none'; });
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  if (name === 'reports') renderReports();
+}
+
+function esc(str) {
+  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function closeModal() { document.getElementById('modal-container').innerHTML = ''; }
+
+function openAddModal(prefill={}) {
+  const today = new Date().toISOString().slice(0,10);
+  const expiry = new Date(Date.now()+90*864e5).toISOString().slice(0,10);
+  document.getElementById('modal-container').innerHTML = `
+  <div class="overlay" onclick="if(event.target===this)closeModal()">
+    <div class="modal">
+      <h2>Add Consignment Item</h2>
+      <div class="form-grid">
+        <div class="field"><label>Customer Name *</label><input id="f-name" type="text" placeholder="Jane Smith" value="${esc(prefill.customerName||'')}"></div>
+        <div class="field"><label>Phone / Email</label><input id="f-contact" type="text" placeholder="0400 000 000" value="${esc(prefill.contact||'')}"></div>
+        <div class="field"><label>Product Name *</label><input id="f-product" type="text" placeholder="Twin tip kite board" value="${esc(prefill.product||'')}"></div>
+        <div class="field"><label>Category</label><select id="f-cat">${CATEGORIES.map(c=>`<option ${prefill.category===c?'selected':''}>${c}</option>`).join('')}</select></div>
+        <div class="field"><label>Condition</label><select id="f-cond">${CONDITIONS.map(c=>`<option ${prefill.condition===c?'selected':''}>${c}</option>`).join('')}</select></div>
+        <div class="field"><label>Brand / Make</label><input id="f-brand" type="text" placeholder="Optional" value="${esc(prefill.brand||'')}"></div>
+        <div class="field"><label>Starting Price ($) *</label><input id="f-start" type="number" min="0" step="0.01" placeholder="0.00" value="${prefill.startPrice||''}"></div>
+        <div class="field"><label>Minimum Price ($) *</label><input id="f-min" type="number" min="0" step="0.01" placeholder="0.00" value="${prefill.minPrice||''}"></div>
+        <div class="field"><label>Date Brought In</label><input id="f-in" type="date" value="${prefill.dateBroughtIn||today}"></div>
+        <div class="field"><label>Expiry / Listing End Date</label><input id="f-exp" type="date" value="${prefill.expiryDate||expiry}"></div>
+      </div>
+      <div class="field" style="margin-top:12px"><label>Notes / Description</label><textarea id="f-notes" placeholder="Size, volume, year, serial number, condition details…">${esc(prefill.notes||'')}</textarea></div>
+      <div class="actions">
+        <button class="btn" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveItem()">Save Item</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function saveItem(existingId) {
+  const name = document.getElementById('f-name').value.trim();
+  const product = document.getElementById('f-product').value.trim();
+  const start = parseFloat(document.getElementById('f-start').value);
+  const min = parseFloat(document.getElementById('f-min').value);
+  if (!name || !product || isNaN(start) || isNaN(min)) { alert('Please fill in all required fields (Customer Name, Product, Start Price, Min Price).'); return; }
+  if (min > start) { alert('Minimum price cannot exceed the starting price.'); return; }
+  const existing = existingId ? items.find(i=>i.id===existingId) : null;
+  const item = {
+    id: existingId || genId(),
+    customerName: name, contact: document.getElementById('f-contact').value.trim(),
+    product, category: document.getElementById('f-cat').value,
+    condition: document.getElementById('f-cond').value, brand: document.getElementById('f-brand').value.trim(),
+    startPrice: start, minPrice: min,
+    dateBroughtIn: document.getElementById('f-in').value, expiryDate: document.getElementById('f-exp').value,
+    notes: document.getElementById('f-notes').value.trim(),
+    status: existing ? existing.status : 'active',
+    salePrice: existing ? existing.salePrice : undefined,
+    saleDate: existing ? existing.saleDate : undefined,
+    paymentMethod: existing ? existing.paymentMethod : undefined,
+    buyerName: existing ? existing.buyerName : undefined,
+    paidOut: existing ? existing.paidOut : undefined,
+    addedAt: existing ? existing.addedAt : new Date().toISOString()
+  };
+  if (existingId) { items[items.findIndex(i=>i.id===existingId)] = item; }
+  else { items.push(item); }
+  save(); closeModal(); renderAll();
+}
+
+function openEditModal(id) {
+  const item = items.find(i=>i.id===id); if (!item) return;
+  openAddModal(item);
+  document.querySelector('.modal h2').textContent = 'Edit Item';
+  document.querySelector('.btn-primary').setAttribute('onclick', `saveItem('${id}')`);
+}
+
+function openSellModal(id) {
+  const item = items.find(i=>i.id===id); if (!item) return;
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('modal-container').innerHTML = `
+  <div class="overlay" onclick="if(event.target===this)closeModal()">
+    <div class="modal">
+      <h2>Record Sale</h2>
+      <p style="font-size:14px;color:var(--text2);margin-bottom:0.5rem">${esc(item.product)} — ${esc(item.customerName)}</p>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:1rem">Starting: ${fmtMoney(item.startPrice)} &nbsp;·&nbsp; Minimum: ${fmtMoney(item.minPrice)}</p>
+      <div class="form-grid">
+        <div class="field"><label>Actual Sale Price ($) *</label><input id="s-price" type="number" min="${item.minPrice}" step="0.01" placeholder="${item.startPrice}" oninput="updateCommCalc()"></div>
+        <div class="field"><label>Sale Date</label><input id="s-date" type="date" value="${today}"></div>
+        <div class="field"><label>Payment Method</label><select id="s-pay"><option>Cash</option><option>Card</option><option>Bank Transfer</option><option>Other</option></select></div>
+        <div class="field"><label>Buyer Name (optional)</label><input id="s-buyer" type="text" placeholder="Optional"></div>
+      </div>
+      <div class="comm-box">
+        <p style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px">Commission Breakdown</p>
+        <div class="comm-row"><span>Sale price</span><span id="cc-sale" style="font-weight:500">—</span></div>
+        <div class="comm-row"><span>Store commission (20%)</span><span id="cc-comm" style="color:var(--danger)">—</span></div>
+        <div class="comm-row total"><span>Seller receives (80%)</span><span id="cc-seller" style="color:var(--success)">—</span></div>
+      </div>
+      <div class="actions">
+        <button class="btn" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="recordSale('${id}')">Record Sale</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function updateCommCalc() {
+  const p = parseFloat(document.getElementById('s-price').value);
+  if (isNaN(p)) { ['cc-sale','cc-comm','cc-seller'].forEach(id=>document.getElementById(id).textContent='—'); return; }
+  document.getElementById('cc-sale').textContent = fmtMoney(p);
+  document.getElementById('cc-comm').textContent = fmtMoney(p*0.2);
+  document.getElementById('cc-seller').textContent = fmtMoney(p*0.8);
+}
+
+function recordSale(id) {
+  const p = parseFloat(document.getElementById('s-price').value);
+  const item = items.find(i=>i.id===id);
+  if (isNaN(p)||p<=0) { alert('Please enter a valid sale price.'); return; }
+  if (p < item.minPrice) { alert(`Sale price cannot be below the minimum of ${fmtMoney(item.minPrice)}.`); return; }
+  item.status='sold'; item.salePrice=p;
+  item.saleDate=document.getElementById('s-date').value;
+  item.paymentMethod=document.getElementById('s-pay').value;
+  item.buyerName=document.getElementById('s-buyer').value.trim();
+  item.paidOut=false;
+  save(); closeModal(); renderAll();
+}
+
+function withdrawItem(id) {
+  const item = items.find(i=>i.id===id);
+  if (!confirm(`Mark "${item.product}" as withdrawn / returned to ${item.customerName}?`)) return;
+  item.status='withdrawn'; save(); renderAll();
+}
+
+function markPaid(id) {
+  const item = items.find(i=>i.id===id);
+  if (!confirm(`Mark seller payout of ${fmtMoney(item.salePrice*0.8)} to ${item.customerName} as completed?`)) return;
+  item.paidOut=true; save(); renderAll();
+}
+
+function deleteItem(id) {
+  const item = items.find(i=>i.id===id);
+  if (!item) return;
+  if (!confirm(`Permanently delete "${item.product}" (${item.customerName})?\n\nThis cannot be undone.`)) return;
+  items = items.filter(i=>i.id!==id);
+  save(); renderAll();
+}
+
+load();
+renderAll();
+</script>
+</body>
+</html>
