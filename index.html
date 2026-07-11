@@ -1,102 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Consignment Manager</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  .app { padding: 1rem 0; font-family: var(--font-sans); }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #ffffff; --bg2: #f5f5f3; --bg3: #ededea;
+    --text: #1a1a1a; --text2: #6b6b6b; --text3: #999;
+    --border: rgba(0,0,0,0.12); --border2: rgba(0,0,0,0.22);
+    --success: #3B6D11; --success-bg: #EAF3DE;
+    --danger: #A32D2D; --danger-bg: #FCEBEB;
+    --info: #185FA5; --info-bg: #E6F1FB;
+    --radius: 8px; --radius-lg: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1c; --bg2: #252525; --bg3: #2e2e2e;
+      --text: #e8e8e8; --text2: #9a9a9a; --text3: #666;
+      --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.2);
+      --success: #97C459; --success-bg: #173404;
+      --danger: #F09595; --danger-bg: #501313;
+      --info: #85B7EB; --info-bg: #042C53;
+    }
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg3); color: var(--text); font-size: 14px; line-height: 1.5; }
+  .app { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
   .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 12px; }
-  .header h1 { font-size: 20px; font-weight: 500; color: var(--color-text-primary); }
-  .header p { font-size: 13px; color: var(--color-text-secondary); margin-top: 2px; }
-  .tabs { display: flex; gap: 4px; background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 4px; margin-bottom: 1.5rem; }
-  .tab { flex: 1; padding: 8px 12px; border: none; background: transparent; border-radius: 6px; font-size: 13px; font-weight: 500; color: var(--color-text-secondary); cursor: pointer; transition: all 0.15s; }
-  .tab.active { background: var(--color-background-primary); color: var(--color-text-primary); border: 0.5px solid var(--color-border-tertiary); }
-  .tab:hover:not(.active) { color: var(--color-text-primary); }
-  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
-  .stat { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 14px 16px; }
-  .stat-label { font-size: 12px; color: var(--color-text-secondary); margin-bottom: 6px; }
-  .stat-val { font-size: 22px; font-weight: 500; color: var(--color-text-primary); }
-  .stat-sub { font-size: 11px; color: var(--color-text-secondary); margin-top: 2px; }
-  .card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1.25rem; margin-bottom: 1rem; }
+  .header h1 { font-size: 22px; font-weight: 600; }
+  .header p { font-size: 13px; color: var(--text2); margin-top: 2px; }
+  .header-btns { display: flex; gap: 8px; }
+  .tabs { display: flex; gap: 4px; background: var(--bg2); border-radius: var(--radius); padding: 4px; margin-bottom: 1.5rem; }
+  .tab { flex: 1; padding: 9px 12px; border: none; background: transparent; border-radius: 6px; font-size: 13px; font-weight: 500; color: var(--text2); cursor: pointer; transition: all 0.15s; font-family: inherit; }
+  .tab.active { background: var(--bg); color: var(--text); border: 1px solid var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .tab:hover:not(.active) { color: var(--text); background: var(--bg3); }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
+  .stat { background: var(--bg2); border-radius: var(--radius); padding: 14px 16px; }
+  .stat-label { font-size: 12px; color: var(--text2); margin-bottom: 6px; }
+  .stat-val { font-size: 22px; font-weight: 600; }
+  .stat-sub { font-size: 11px; color: var(--text2); margin-top: 2px; }
+  .card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem; margin-bottom: 1rem; }
   .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .field { display: flex; flex-direction: column; gap: 5px; position: relative; }
-  .field label { font-size: 12px; color: var(--color-text-secondary); font-weight: 500; }
-  .field input, .field select, .field textarea { font-size: 14px; }
-  .field textarea { resize: vertical; min-height: 60px; }
-  .btn { padding: 8px 18px; border-radius: var(--border-radius-md); font-size: 13px; font-weight: 500; cursor: pointer; border: 0.5px solid var(--color-border-secondary); background: transparent; color: var(--color-text-primary); transition: background 0.15s; font-family: var(--font-sans); }
-  .btn:hover { background: var(--color-background-secondary); }
-  .btn-primary { background: var(--color-text-primary); color: var(--color-background-primary); border-color: transparent; }
-  .btn-primary:hover { opacity: 0.85; background: var(--color-text-primary); }
+  .field label { font-size: 12px; color: var(--text2); font-weight: 500; }
+  .field input, .field select, .field textarea {
+    padding: 8px 10px; border: 1px solid var(--border2); border-radius: var(--radius);
+    background: var(--bg); color: var(--text); font-size: 14px; font-family: inherit; transition: border-color 0.15s;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: #378ADD; box-shadow: 0 0 0 3px rgba(55,138,221,0.15); }
+  .field textarea { resize: vertical; min-height: 70px; }
+  .btn { padding: 8px 18px; border-radius: var(--radius); font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid var(--border2); background: transparent; color: var(--text); transition: background 0.15s; font-family: inherit; }
+  .btn:hover { background: var(--bg2); }
+  .btn-primary { background: var(--text); color: var(--bg); border-color: transparent; }
+  .btn-primary:hover { opacity: 0.85; }
   .btn-sm { padding: 5px 10px; font-size: 12px; }
-  .btn-danger { color: var(--color-text-danger); border-color: var(--color-border-danger); }
-  .btn-danger:hover { background: var(--color-background-danger); }
-  .btn-success { color: var(--color-text-success); border-color: var(--color-border-success); }
-  .btn-success:hover { background: var(--color-background-success); }
-  .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 1rem; }
+  .btn-danger { color: var(--danger); border-color: rgba(163,45,45,0.35); }
+  .btn-danger:hover { background: var(--danger-bg); }
+  .btn-success { color: var(--success); border-color: rgba(59,109,17,0.35); }
+  .btn-success:hover { background: var(--success-bg); }
+  .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 1.25rem; }
+  .tbl-wrap { overflow-x: auto; }
   table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
-  th { text-align: left; padding: 8px 10px; font-size: 12px; font-weight: 500; color: var(--color-text-secondary); border-bottom: 0.5px solid var(--color-border-tertiary); }
-  td { padding: 10px 10px; border-bottom: 0.5px solid var(--color-border-tertiary); color: var(--color-text-primary); vertical-align: middle; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  th { text-align: left; padding: 9px 10px; font-size: 12px; font-weight: 600; color: var(--text2); border-bottom: 1px solid var(--border); white-space: nowrap; }
+  td { padding: 10px 10px; border-bottom: 1px solid var(--border); vertical-align: middle; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   tr:last-child td { border-bottom: none; }
-  tr:hover td { background: var(--color-background-secondary); }
-  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; }
-  .badge-active { background: #EAF3DE; color: #3B6D11; }
-  .badge-sold { background: #E6F1FB; color: #185FA5; }
-  .badge-expired { background: #FAECE7; color: #993C1D; }
-  .badge-withdrawn { background: #F1EFE8; color: #5F5E5A; }
+  tr:hover td { background: var(--bg2); }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .badge-active { background: var(--success-bg); color: var(--success); }
+  .badge-sold { background: var(--info-bg); color: var(--info); }
+  .badge-expired { background: #FAEEDA; color: #854F0B; }
+  .badge-withdrawn { background: var(--bg2); color: var(--text2); border: 1px solid var(--border); }
   .search-row { display: flex; gap: 10px; margin-bottom: 1rem; align-items: center; flex-wrap: wrap; }
+  .search-row input, .search-row select {
+    padding: 8px 10px; border: 1px solid var(--border2); border-radius: var(--radius);
+    background: var(--bg); color: var(--text); font-size: 13px; font-family: inherit;
+  }
   .search-row input { flex: 1; min-width: 180px; }
-  .empty { text-align: center; padding: 2.5rem; color: var(--color-text-secondary); font-size: 14px; }
-  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-  .modal { background: var(--color-background-primary); border-radius: var(--border-radius-lg); padding: 1.5rem; width: 540px; max-width: 95vw; border: 0.5px solid var(--color-border-tertiary); max-height: 90vh; overflow-y: auto; }
-  .modal h2 { font-size: 16px; font-weight: 500; margin-bottom: 1.25rem; }
-  .comm-box { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 1rem; margin-top: 1rem; }
+  .empty { text-align: center; padding: 3rem; color: var(--text2); }
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
+  .modal { background: var(--bg); border-radius: var(--radius-lg); padding: 1.75rem; width: 560px; max-width: 100%; border: 1px solid var(--border); max-height: 90vh; overflow-y: auto; }
+  .modal h2 { font-size: 17px; font-weight: 600; margin-bottom: 1.25rem; }
+  .comm-box { background: var(--bg2); border-radius: var(--radius); padding: 1rem; margin-top: 1rem; }
   .comm-row { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; }
-  .comm-row.total { font-weight: 500; border-top: 0.5px solid var(--color-border-tertiary); padding-top: 8px; margin-top: 4px; }
+  .comm-row.total { font-weight: 600; border-top: 1px solid var(--border); padding-top: 10px; margin-top: 6px; }
   .report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-  .section-title { font-size: 13px; font-weight: 500; color: var(--color-text-secondary); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
-  .row-actions { display: flex; gap: 3px; flex-wrap: wrap; }
-  .icon-btn { width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-danger); background: transparent; cursor: pointer; color: var(--color-text-danger); font-size: 14px; transition: background 0.15s; }
-  .icon-btn:hover { background: var(--color-background-danger); }
-  .customer-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: var(--color-background-primary); border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); z-index: 100; max-height: 180px; overflow-y: auto; margin-top: 2px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-  .customer-option { padding: 9px 12px; cursor: pointer; font-size: 13px; border-bottom: 0.5px solid var(--color-border-tertiary); }
+  @media (max-width: 600px) { .form-grid, .report-grid { grid-template-columns: 1fr; } }
+  .section-title { font-size: 11px; font-weight: 700; color: var(--text2); text-transform: uppercase; letter-spacing: 0.7px; margin-bottom: 12px; }
+  .row-actions { display: flex; gap: 4px; flex-wrap: wrap; }
+  .icon-btn { width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--radius); border: 1px solid rgba(163,45,45,0.35); background: transparent; cursor: pointer; color: var(--danger); font-size: 15px; transition: background 0.15s; }
+  .icon-btn:hover { background: var(--danger-bg); }
+  .customer-dropdown { position: absolute; top: 100%; left: 0; right: 0; background: var(--bg); border: 1px solid var(--border2); border-radius: var(--radius); z-index: 200; max-height: 200px; overflow-y: auto; margin-top: 2px; box-shadow: 0 4px 16px rgba(0,0,0,0.12); }
+  .customer-option { padding: 10px 12px; cursor: pointer; border-bottom: 1px solid var(--border); }
   .customer-option:last-child { border-bottom: none; }
-  .customer-option:hover { background: var(--color-background-secondary); }
-  .customer-option .cname { font-weight: 500; color: var(--color-text-primary); }
-  .customer-option .ccontact { font-size: 12px; color: var(--color-text-secondary); margin-top: 1px; }
-  .autofilled { background: #EAF3DE !important; border-color: #3B6D11 !important; }
-  .customer-tag { display: inline-flex; align-items: center; gap: 6px; background: #E6F1FB; color: #185FA5; border-radius: 20px; padding: 3px 10px; font-size: 12px; font-weight: 500; margin-bottom: 8px; }
-  .customer-tag button { background: none; border: none; cursor: pointer; color: #185FA5; font-size: 14px; line-height: 1; padding: 0; }
+  .customer-option:hover { background: var(--bg2); }
+  .customer-option .cname { font-weight: 500; font-size: 13px; }
+  .customer-option .ccontact { font-size: 12px; color: var(--text2); margin-top: 1px; }
+  .customer-tag { display: inline-flex; align-items: center; gap: 6px; background: var(--info-bg); color: var(--info); border-radius: 20px; padding: 4px 12px; font-size: 13px; font-weight: 500; margin-bottom: 10px; }
+  .customer-tag button { background: none; border: none; cursor: pointer; color: var(--info); font-size: 16px; line-height: 1; padding: 0; }
+  .autofilled { background: var(--success-bg) !important; border-color: var(--success) !important; }
 </style>
-
+</head>
+<body>
 <div class="app">
   <div class="header">
     <div>
-      <h1><i class="ti ti-tag" aria-hidden="true" style="font-size:18px;vertical-align:-2px;margin-right:8px"></i>Consignment Manager</h1>
+      <h1>🏄 Consignment Manager</h1>
       <p>20% store commission · 80% to seller</p>
     </div>
-    <div style="display:flex;gap:8px;">
-      <button class="btn" onclick="switchTab('customers', document.querySelectorAll('.tab')[3])"><i class="ti ti-users" aria-hidden="true" style="font-size:14px;vertical-align:-1px;margin-right:4px"></i>Customers</button>
-      <button class="btn btn-primary" onclick="openAddModal()"><i class="ti ti-plus" aria-hidden="true" style="font-size:14px;vertical-align:-1px;margin-right:4px"></i>Add Item</button>
+    <div class="header-btns">
+      <button class="btn" onclick="switchTab('customers', document.querySelectorAll('.tab')[3])">👥 Customers</button>
+      <button class="btn btn-primary" onclick="openAddModal()">+ Add Item</button>
     </div>
   </div>
 
   <div class="stats" id="stats"></div>
 
   <div class="tabs">
-    <button class="tab active" onclick="switchTab('inventory', this)"><i class="ti ti-package" aria-hidden="true" style="font-size:13px;vertical-align:-2px;margin-right:3px"></i>Inventory</button>
-    <button class="tab" onclick="switchTab('sold', this)"><i class="ti ti-circle-check" aria-hidden="true" style="font-size:13px;vertical-align:-2px;margin-right:3px"></i>Sold</button>
-    <button class="tab" onclick="switchTab('reports', this)"><i class="ti ti-chart-bar" aria-hidden="true" style="font-size:13px;vertical-align:-2px;margin-right:3px"></i>Reports</button>
-    <button class="tab" onclick="switchTab('customers', this)"><i class="ti ti-users" aria-hidden="true" style="font-size:13px;vertical-align:-2px;margin-right:3px"></i>Customers</button>
+    <button class="tab active" onclick="switchTab('inventory', this)">📦 Inventory</button>
+    <button class="tab" onclick="switchTab('sold', this)">✅ Sold Items</button>
+    <button class="tab" onclick="switchTab('reports', this)">📊 Reports</button>
+    <button class="tab" onclick="switchTab('customers', this)">👥 Customers</button>
   </div>
 
   <div id="tab-inventory">
     <div class="search-row">
       <input type="text" id="search" placeholder="Search by name or product…" oninput="renderInventory()">
-      <select onchange="filterStatus=this.value;renderInventory()">
+      <select onchange="filterStatus=this.value; renderInventory()">
         <option value="">All statuses</option>
         <option value="active">Active</option>
         <option value="expired">Expired</option>
         <option value="withdrawn">Withdrawn</option>
       </select>
     </div>
-    <div class="card" style="padding:0;overflow:hidden;">
-      <div style="overflow-x:auto;">
+    <div class="card" style="padding:0; overflow:hidden;">
+      <div class="tbl-wrap">
         <table>
           <colgroup><col style="width:13%"><col style="width:15%"><col style="width:9%"><col style="width:9%"><col style="width:9%"><col style="width:10%"><col style="width:10%"><col style="width:25%"></colgroup>
           <thead><tr><th>Customer</th><th>Product</th><th>Start $</th><th>Min $</th><th>Status</th><th>Brought In</th><th>Expires</th><th>Actions</th></tr></thead>
@@ -107,8 +145,8 @@
   </div>
 
   <div id="tab-sold" style="display:none">
-    <div class="card" style="padding:0;overflow:hidden;">
-      <div style="overflow-x:auto;">
+    <div class="card" style="padding:0; overflow:hidden;">
+      <div class="tbl-wrap">
         <table>
           <colgroup><col style="width:12%"><col style="width:14%"><col style="width:9%"><col style="width:10%"><col style="width:10%"><col style="width:10%"><col style="width:10%"><col style="width:9%"><col style="width:16%"></colgroup>
           <thead><tr><th>Customer</th><th>Product</th><th>Sale $</th><th>Commission</th><th>Seller Gets</th><th>Brought In</th><th>Sold On</th><th>Paid Out</th><th>Actions</th></tr></thead>
@@ -120,20 +158,20 @@
 
   <div id="tab-reports" style="display:none">
     <div class="report-grid">
-      <div class="card"><p class="section-title">Top customers by sales</p><div id="top-customers"></div></div>
-      <div class="card"><p class="section-title">Sales by category</p><div id="by-category"></div></div>
+      <div class="card"><p class="section-title">Top Customers by Sales</p><div id="top-customers"></div></div>
+      <div class="card"><p class="section-title">Sales by Category</p><div id="by-category"></div></div>
     </div>
-    <div class="card"><p class="section-title">Monthly summary</p><div id="monthly-summary"></div></div>
+    <div class="card"><p class="section-title">Monthly Summary</p><div id="monthly-summary"></div></div>
   </div>
 
   <div id="tab-customers" style="display:none">
     <div class="search-row">
       <input type="text" id="cust-search" placeholder="Search customers…" oninput="renderCustomers()">
     </div>
-    <div class="card" style="padding:0;overflow:hidden;">
-      <div style="overflow-x:auto;">
+    <div class="card" style="padding:0; overflow:hidden;">
+      <div class="tbl-wrap">
         <table>
-          <colgroup><col style="width:22%"><col style="width:22%"><col style="width:12%"><col style="width:12%"><col style="width:12%"><col style="width:18%"></colgroup>
+          <colgroup><col style="width:22%"><col style="width:22%"><col style="width:10%"><col style="width:10%"><col style="width:14%"><col style="width:22%"></colgroup>
           <thead><tr><th>Name</th><th>Contact</th><th>Items</th><th>Sold</th><th>Total Sales</th><th>Actions</th></tr></thead>
           <tbody id="cust-body"></tbody>
         </table>
@@ -148,60 +186,64 @@
 const COMMISSION = 0.20;
 const CATEGORIES = ['Foil','Kite','SUP','Surf'];
 const CONDITIONS = ['New','Like New','Good','Fair','Poor'];
-const ITEMS_KEY = 'consign_items2';
-const CUSTS_KEY = 'consign_customers';
+const ITEMS_KEY = 'consignment_manager_v1';
+const CUSTS_KEY = 'consignment_customers_v1';
 
-let items = JSON.parse(localStorage.getItem(ITEMS_KEY) || '[]');
-let customers = JSON.parse(localStorage.getItem(CUSTS_KEY) || '[]');
+let items = [];
+let customers = [];
 let filterStatus = '';
 
+function loadData() {
+  try { items = JSON.parse(localStorage.getItem(ITEMS_KEY) || '[]'); } catch(e) { items = []; }
+  try { customers = JSON.parse(localStorage.getItem(CUSTS_KEY) || '[]'); } catch(e) { customers = []; }
+}
 function saveItems() { localStorage.setItem(ITEMS_KEY, JSON.stringify(items)); }
 function saveCusts() { localStorage.setItem(CUSTS_KEY, JSON.stringify(customers)); }
-function genId() { return Math.random().toString(36).slice(2,10); }
+function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtDate(d) { if(!d) return '—'; return new Date(d+'T00:00:00').toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'2-digit'}); }
+function fmtMoney(n) { return '$' + Number(n).toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 
 function upsertCustomer(name, contact) {
-  name = name.trim(); contact = contact.trim();
+  name = name.trim(); contact = (contact||'').trim();
   let c = customers.find(c => c.name.toLowerCase() === name.toLowerCase());
   if (c) { if (contact && contact !== c.contact) { c.contact = contact; saveCusts(); } return c; }
   c = { id: genId(), name, contact, createdAt: new Date().toISOString() };
   customers.push(c); saveCusts(); return c;
 }
 
-function fmtDate(d) { if (!d) return '—'; return new Date(d).toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'2-digit'}); }
-function fmtMoney(n) { return '$' + Number(n).toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2}); }
-function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-
 function itemStatus(item) {
-  if (item.status==='withdrawn') return 'withdrawn';
-  if (item.status==='sold') return 'sold';
-  if (item.expiryDate && new Date(item.expiryDate)<new Date()) return 'expired';
+  if (item.status === 'withdrawn') return 'withdrawn';
+  if (item.status === 'sold') return 'sold';
+  if (item.expiryDate && new Date(item.expiryDate) < new Date()) return 'expired';
   return 'active';
 }
 
 function renderStats() {
-  const active = items.filter(i=>itemStatus(i)==='active');
-  const sold = items.filter(i=>itemStatus(i)==='sold');
-  const totalSales = sold.reduce((s,i)=>s+Number(i.salePrice||0),0);
-  const unpaid = sold.filter(i=>!i.paidOut).reduce((s,i)=>s+Number(i.salePrice||0)*0.8,0);
+  const active = items.filter(i => itemStatus(i) === 'active');
+  const sold = items.filter(i => itemStatus(i) === 'sold');
+  const totalSales = sold.reduce((s,i) => s + Number(i.salePrice||0), 0);
+  const unpaid = sold.filter(i => !i.paidOut).reduce((s,i) => s + Number(i.salePrice||0)*0.8, 0);
   document.getElementById('stats').innerHTML = `
-    <div class="stat"><p class="stat-label">Active listings</p><p class="stat-val">${active.length}</p></div>
-    <div class="stat"><p class="stat-label">Total sales</p><p class="stat-val">${fmtMoney(totalSales)}</p></div>
-    <div class="stat"><p class="stat-label">Store commission</p><p class="stat-val">${fmtMoney(totalSales*COMMISSION)}</p><p class="stat-sub">20% of sales</p></div>
-    <div class="stat"><p class="stat-label">Payouts pending</p><p class="stat-val">${fmtMoney(unpaid)}</p><p class="stat-sub">owed to sellers</p></div>`;
+    <div class="stat"><p class="stat-label">Active Listings</p><p class="stat-val">${active.length}</p></div>
+    <div class="stat"><p class="stat-label">Total Sales</p><p class="stat-val">${fmtMoney(totalSales)}</p></div>
+    <div class="stat"><p class="stat-label">Store Commission</p><p class="stat-val">${fmtMoney(totalSales*COMMISSION)}</p><p class="stat-sub">20% of sales</p></div>
+    <div class="stat"><p class="stat-label">Payouts Pending</p><p class="stat-val">${fmtMoney(unpaid)}</p><p class="stat-sub">owed to sellers</p></div>`;
 }
 
 function renderInventory() {
   const q = (document.getElementById('search')?.value||'').toLowerCase();
-  const filtered = items.filter(i=>{
-    const st=itemStatus(i); if(st==='sold') return false;
-    if(filterStatus && st!==filterStatus) return false;
-    if(q && !i.customerName.toLowerCase().includes(q) && !i.product.toLowerCase().includes(q)) return false;
+  const filtered = items.filter(i => {
+    const st = itemStatus(i);
+    if (st === 'sold') return false;
+    if (filterStatus && st !== filterStatus) return false;
+    if (q && !i.customerName.toLowerCase().includes(q) && !i.product.toLowerCase().includes(q)) return false;
     return true;
   });
   const tbody = document.getElementById('inv-body');
-  if(!filtered.length){tbody.innerHTML=`<tr><td colspan="8"><div class="empty">No items found</div></td></tr>`;return;}
-  tbody.innerHTML = filtered.map(item=>{
-    const st=itemStatus(item);
+  if (!filtered.length) { tbody.innerHTML = `<tr><td colspan="8"><div class="empty">No items found. Click <strong>+ Add Item</strong> to get started.</div></td></tr>`; return; }
+  tbody.innerHTML = filtered.map(item => {
+    const st = itemStatus(item);
     return `<tr>
       <td title="${esc(item.customerName)}">${esc(item.customerName)}</td>
       <td title="${esc(item.product)}">${esc(item.product)}</td>
@@ -212,104 +254,106 @@ function renderInventory() {
         <button class="btn btn-sm btn-success" onclick="openSellModal('${item.id}')">Sell</button>
         <button class="btn btn-sm" onclick="openEditModal('${item.id}')">Edit</button>
         <button class="btn btn-sm" onclick="withdrawItem('${item.id}')">Withdraw</button>
-        <button class="icon-btn" onclick="deleteItem('${item.id}')" aria-label="Delete"><i class="ti ti-trash" aria-hidden="true"></i></button>
+        <button class="icon-btn" onclick="deleteItem('${item.id}')" title="Delete">🗑</button>
       </div></td></tr>`;
   }).join('');
 }
 
 function renderSold() {
-  const sold = items.filter(i=>itemStatus(i)==='sold');
+  const sold = items.filter(i => itemStatus(i) === 'sold');
   const tbody = document.getElementById('sold-body');
-  if(!sold.length){tbody.innerHTML=`<tr><td colspan="9"><div class="empty">No sales yet</div></td></tr>`;return;}
-  tbody.innerHTML = sold.map(item=>{
-    const sale=Number(item.salePrice);
+  if (!sold.length) { tbody.innerHTML = `<tr><td colspan="9"><div class="empty">No sales recorded yet.</div></td></tr>`; return; }
+  tbody.innerHTML = sold.map(item => {
+    const sale = Number(item.salePrice);
     return `<tr>
       <td title="${esc(item.customerName)}">${esc(item.customerName)}</td>
       <td title="${esc(item.product)}">${esc(item.product)}</td>
       <td>${fmtMoney(sale)}</td><td>${fmtMoney(sale*0.2)}</td><td>${fmtMoney(sale*0.8)}</td>
       <td>${fmtDate(item.dateBroughtIn)}</td><td>${fmtDate(item.saleDate)}</td>
-      <td>${item.paidOut?'<span class="badge badge-sold">Paid</span>':'<span class="badge badge-expired">Pending</span>'}</td>
+      <td>${item.paidOut?'<span class="badge badge-active">Paid</span>':'<span class="badge badge-withdrawn">Pending</span>'}</td>
       <td><div class="row-actions">
-        ${!item.paidOut?`<button class="btn btn-sm btn-success" onclick="markPaid('${item.id}')">Pay</button>`:''}
-        <button class="icon-btn" onclick="deleteItem('${item.id}')" aria-label="Delete"><i class="ti ti-trash" aria-hidden="true"></i></button>
+        ${!item.paidOut?`<button class="btn btn-sm btn-success" onclick="markPaid('${item.id}')">Pay Out</button>`:''}
+        <button class="icon-btn" onclick="deleteItem('${item.id}')" title="Delete">🗑</button>
       </div></td></tr>`;
   }).join('');
 }
 
 function renderCustomers() {
   const q = (document.getElementById('cust-search')?.value||'').toLowerCase();
-  const filtered = customers.filter(c=>!q||c.name.toLowerCase().includes(q)||(c.contact||'').toLowerCase().includes(q));
+  const filtered = customers.filter(c => !q || c.name.toLowerCase().includes(q) || (c.contact||'').toLowerCase().includes(q));
   const tbody = document.getElementById('cust-body');
-  if(!filtered.length){tbody.innerHTML=`<tr><td colspan="6"><div class="empty">No customers yet — they're added automatically when you create an item.</div></td></tr>`;return;}
-  tbody.innerHTML = filtered.map(c=>{
-    const cItems = items.filter(i=>i.customerName.toLowerCase()===c.name.toLowerCase());
-    const cSold = cItems.filter(i=>itemStatus(i)==='sold');
-    const totalSales = cSold.reduce((s,i)=>s+Number(i.salePrice||0),0);
+  if (!filtered.length) { tbody.innerHTML = `<tr><td colspan="6"><div class="empty">No customers yet — they're added automatically when you create an item.</div></td></tr>`; return; }
+  tbody.innerHTML = filtered.map(c => {
+    const cItems = items.filter(i => i.customerName.toLowerCase() === c.name.toLowerCase());
+    const cSold = cItems.filter(i => itemStatus(i) === 'sold');
+    const totalSales = cSold.reduce((s,i) => s+Number(i.salePrice||0), 0);
     return `<tr>
-      <td title="${esc(c.name)}" style="font-weight:500">${esc(c.name)}</td>
+      <td title="${esc(c.name)}" style="font-weight:600">${esc(c.name)}</td>
       <td title="${esc(c.contact)}">${esc(c.contact)||'—'}</td>
       <td>${cItems.length}</td><td>${cSold.length}</td>
-      <td>${cSold.length?fmtMoney(totalSales):'—'}</td>
+      <td>${cSold.length ? fmtMoney(totalSales) : '—'}</td>
       <td><div class="row-actions">
         <button class="btn btn-sm btn-primary" onclick="openAddModal({customerName:'${esc(c.name)}',contact:'${esc(c.contact)}'})">+ Item</button>
         <button class="btn btn-sm" onclick="editCustomer('${c.id}')">Edit</button>
-        <button class="icon-btn" onclick="deleteCustomer('${c.id}')" aria-label="Delete customer"><i class="ti ti-trash" aria-hidden="true"></i></button>
+        <button class="icon-btn" onclick="deleteCustomer('${c.id}')" title="Delete">🗑</button>
       </div></td></tr>`;
   }).join('');
 }
 
 function renderReports() {
-  const sold = items.filter(i=>itemStatus(i)==='sold');
-  const byC={};sold.forEach(i=>{byC[i.customerName]=(byC[i.customerName]||0)+Number(i.salePrice);});
-  const topC=Object.entries(byC).sort((a,b)=>b[1]-a[1]).slice(0,6);const maxC=topC[0]?.[1]||1;
-  document.getElementById('top-customers').innerHTML=topC.length?topC.map(([n,a])=>`
-    <div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px"><span>${esc(n)}</span><span style="color:var(--color-text-secondary)">${fmtMoney(a)}</span></div>
-    <div style="height:6px;background:var(--color-background-secondary);border-radius:3px"><div style="height:100%;width:${(a/maxC*100).toFixed(1)}%;background:#378ADD;border-radius:3px"></div></div></div>`).join('')
-    :'<p style="font-size:13px;color:var(--color-text-secondary)">No sales yet</p>';
-  const byCat={};sold.forEach(i=>{byCat[i.category||'Other']=(byCat[i.category||'Other']||0)+Number(i.salePrice);});
-  const cats=Object.entries(byCat).sort((a,b)=>b[1]-a[1]);const maxCat=cats[0]?.[1]||1;
-  document.getElementById('by-category').innerHTML=cats.length?cats.map(([c,a])=>`
-    <div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px"><span>${c}</span><span style="color:var(--color-text-secondary)">${fmtMoney(a)}</span></div>
-    <div style="height:6px;background:var(--color-background-secondary);border-radius:3px"><div style="height:100%;width:${(a/maxCat*100).toFixed(1)}%;background:#1D9E75;border-radius:3px"></div></div></div>`).join('')
-    :'<p style="font-size:13px;color:var(--color-text-secondary)">No sales yet</p>';
-  const byM={};sold.forEach(i=>{const m=i.saleDate?i.saleDate.slice(0,7):'Unknown';if(!byM[m])byM[m]={sales:0,count:0};byM[m].sales+=Number(i.salePrice);byM[m].count++;});
-  const months=Object.entries(byM).sort((a,b)=>b[0].localeCompare(a[0]));
-  document.getElementById('monthly-summary').innerHTML=months.length?`<table><thead><tr><th>Month</th><th>Items</th><th>Total sales</th><th>Commission</th><th>Paid to sellers</th></tr></thead><tbody>${months.map(([m,d])=>`<tr><td>${m}</td><td>${d.count}</td><td>${fmtMoney(d.sales)}</td><td>${fmtMoney(d.sales*0.2)}</td><td>${fmtMoney(d.sales*0.8)}</td></tr>`).join('')}</tbody></table>`
-    :'<p style="font-size:13px;color:var(--color-text-secondary)">No sales yet</p>';
+  const sold = items.filter(i => itemStatus(i) === 'sold');
+  const byC = {}; sold.forEach(i => { byC[i.customerName] = (byC[i.customerName]||0) + Number(i.salePrice); });
+  const topC = Object.entries(byC).sort((a,b)=>b[1]-a[1]).slice(0,6); const maxC = topC[0]?.[1]||1;
+  document.getElementById('top-customers').innerHTML = topC.length ? topC.map(([n,a]) => `
+    <div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>${esc(n)}</span><span style="color:var(--text2)">${fmtMoney(a)}</span></div>
+    <div style="height:7px;background:var(--bg3);border-radius:4px"><div style="height:100%;width:${(a/maxC*100).toFixed(1)}%;background:#378ADD;border-radius:4px"></div></div></div>`).join('')
+    : '<p style="color:var(--text2);font-size:13px">No sales yet.</p>';
+  const byCat = {}; sold.forEach(i => { byCat[i.category||'Other'] = (byCat[i.category||'Other']||0) + Number(i.salePrice); });
+  const cats = Object.entries(byCat).sort((a,b)=>b[1]-a[1]); const maxCat = cats[0]?.[1]||1;
+  document.getElementById('by-category').innerHTML = cats.length ? cats.map(([c,a]) => `
+    <div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>${c}</span><span style="color:var(--text2)">${fmtMoney(a)}</span></div>
+    <div style="height:7px;background:var(--bg3);border-radius:4px"><div style="height:100%;width:${(a/maxCat*100).toFixed(1)}%;background:#1D9E75;border-radius:4px"></div></div></div>`).join('')
+    : '<p style="color:var(--text2);font-size:13px">No sales yet.</p>';
+  const byM = {}; sold.forEach(i => { const m = i.saleDate?i.saleDate.slice(0,7):'Unknown'; if(!byM[m])byM[m]={sales:0,count:0}; byM[m].sales+=Number(i.salePrice); byM[m].count++; });
+  const months = Object.entries(byM).sort((a,b)=>b[0].localeCompare(a[0]));
+  document.getElementById('monthly-summary').innerHTML = months.length ? `
+    <table><thead><tr><th>Month</th><th>Items Sold</th><th>Total Sales</th><th>Commission (20%)</th><th>Paid to Sellers</th></tr></thead>
+    <tbody>${months.map(([m,d])=>`<tr><td>${m}</td><td>${d.count}</td><td>${fmtMoney(d.sales)}</td><td>${fmtMoney(d.sales*0.2)}</td><td>${fmtMoney(d.sales*0.8)}</td></tr>`).join('')}</tbody></table>`
+    : '<p style="color:var(--text2);font-size:13px">No sales yet.</p>';
 }
 
-function renderAll(){renderStats();renderInventory();renderSold();renderReports();renderCustomers();}
+function renderAll() { renderStats(); renderInventory(); renderSold(); renderReports(); renderCustomers(); }
 
-function switchTab(name,el){
-  ['inventory','sold','reports','customers'].forEach(t=>{document.getElementById('tab-'+t).style.display=t===name?'':'none';});
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  if(el)el.classList.add('active');
-  if(name==='reports')renderReports();
-  if(name==='customers')renderCustomers();
+function switchTab(name, el) {
+  ['inventory','sold','reports','customers'].forEach(t => { document.getElementById('tab-'+t).style.display = t===name?'':'none'; });
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  if (el) el.classList.add('active');
+  if (name==='reports') renderReports();
+  if (name==='customers') renderCustomers();
 }
 
-function closeModal(){document.getElementById('modal-container').innerHTML='';}
+function closeModal() { document.getElementById('modal-container').innerHTML = ''; }
 
 function openAddModal(prefill={}) {
-  const today=new Date().toISOString().slice(0,10);
-  const expiry=new Date(Date.now()+90*864e5).toISOString().slice(0,10);
+  const today = new Date().toISOString().slice(0,10);
+  const expiry = new Date(Date.now()+90*864e5).toISOString().slice(0,10);
   const hasPrefill = !!(prefill.customerName);
   document.getElementById('modal-container').innerHTML = `
   <div class="overlay" onclick="if(event.target===this)closeModal()">
     <div class="modal">
-      <h2><i class="ti ti-plus" aria-hidden="true" style="font-size:15px;vertical-align:-2px;margin-right:6px"></i>Add consignment item</h2>
-      <div style="margin-bottom:12px;">
-        ${hasPrefill?`<div class="customer-tag"><i class="ti ti-user" aria-hidden="true" style="font-size:13px"></i>${esc(prefill.customerName)} <button onclick="clearCustomer()" aria-label="Clear customer">×</button></div>`:''}
-        <div class="field" id="cust-field" style="${hasPrefill?'display:none':''}">
-          <label>Customer name *</label>
+      <h2>Add Consignment Item</h2>
+      <div style="margin-bottom:14px;">
+        ${hasPrefill?`<div class="customer-tag">👤 ${esc(prefill.customerName)} <button onclick="clearCustomer()" aria-label="Clear customer">×</button></div>`:''}
+        <div id="cust-field" style="${hasPrefill?'display:none':'display:flex;flex-direction:column;gap:5px;margin-bottom:12px'}">
+          <label style="font-size:12px;color:var(--text2);font-weight:500;">Customer name *</label>
           <input id="f-name" type="text" placeholder="Start typing a name…" value="${esc(prefill.customerName||'')}" oninput="onCustInput()" autocomplete="off">
           <div id="cust-dropdown" class="customer-dropdown" style="display:none"></div>
         </div>
-        <div class="field" id="contact-field" style="${hasPrefill?'display:none':''}">
-          <label>Phone / email</label>
+        <div id="contact-field" style="${hasPrefill?'display:none':'display:flex;flex-direction:column;gap:5px;margin-bottom:12px'}">
+          <label style="font-size:12px;color:var(--text2);font-weight:500;">Phone / email</label>
           <input id="f-contact" type="text" placeholder="0400 000 000" value="${esc(prefill.contact||'')}">
         </div>
-        ${hasPrefill?`<input type="hidden" id="f-name" value="${esc(prefill.customerName||'')}"><input type="hidden" id="f-contact" value="${esc(prefill.contact||'')}"`:''}
+        ${hasPrefill?`<input type="hidden" id="f-name" value="${esc(prefill.customerName||'')}"><input type="hidden" id="f-contact" value="${esc(prefill.contact||'')}">`:''}
       </div>
       <div class="form-grid">
         <div class="field"><label>Product name *</label><input id="f-product" type="text" placeholder="Twin tip kite board" value="${esc(prefill.product||'')}"></div>
@@ -319,22 +363,27 @@ function openAddModal(prefill={}) {
         <div class="field"><label>Starting price ($) *</label><input id="f-start" type="number" min="0" step="0.01" placeholder="0.00" value="${prefill.startPrice||''}"></div>
         <div class="field"><label>Minimum price ($) *</label><input id="f-min" type="number" min="0" step="0.01" placeholder="0.00" value="${prefill.minPrice||''}"></div>
         <div class="field"><label>Date brought in</label><input id="f-in" type="date" value="${prefill.dateBroughtIn||today}"></div>
-        <div class="field"><label>Expiry date</label><input id="f-exp" type="date" value="${prefill.expiryDate||expiry}"></div>
+        <div class="field"><label>Expiry / listing end date</label><input id="f-exp" type="date" value="${prefill.expiryDate||expiry}"></div>
       </div>
-      <div class="field" style="margin-top:12px"><label>Notes / description</label><textarea id="f-notes" placeholder="Size, volume, year, condition details…">${esc(prefill.notes||'')}</textarea></div>
+      <div class="field" style="margin-top:12px"><label>Notes / description</label><textarea id="f-notes" placeholder="Size, volume, year, serial number, condition details…">${esc(prefill.notes||'')}</textarea></div>
       <div class="actions">
         <button class="btn" onclick="closeModal()">Cancel</button>
-        <button class="btn btn-primary" onclick="saveItem()">Save item</button>
+        <button class="btn btn-primary" onclick="saveItem()">Save Item</button>
       </div>
     </div>
   </div>`;
 }
 
 function clearCustomer() {
-  document.getElementById('cust-field').style.display='';
-  document.getElementById('contact-field').style.display='';
-  const tag = document.querySelector('.customer-tag');
-  if(tag) tag.remove();
+  document.getElementById('cust-field').style.display='flex';
+  document.getElementById('cust-field').style.flexDirection='column';
+  document.getElementById('cust-field').style.gap='5px';
+  document.getElementById('cust-field').style.marginBottom='12px';
+  document.getElementById('contact-field').style.display='flex';
+  document.getElementById('contact-field').style.flexDirection='column';
+  document.getElementById('contact-field').style.gap='5px';
+  document.getElementById('contact-field').style.marginBottom='12px';
+  const tag = document.querySelector('.customer-tag'); if(tag) tag.remove();
   document.getElementById('f-name').value='';
   document.getElementById('f-contact').value='';
   document.getElementById('f-name').focus();
@@ -343,10 +392,10 @@ function clearCustomer() {
 function onCustInput() {
   const q = document.getElementById('f-name').value.toLowerCase();
   const dd = document.getElementById('cust-dropdown');
-  if(!q){dd.style.display='none';return;}
-  const matches = customers.filter(c=>c.name.toLowerCase().includes(q)).slice(0,6);
-  if(!matches.length){dd.style.display='none';return;}
-  dd.innerHTML = matches.map(c=>`
+  if (!q) { dd.style.display='none'; return; }
+  const matches = customers.filter(c => c.name.toLowerCase().includes(q)).slice(0,6);
+  if (!matches.length) { dd.style.display='none'; return; }
+  dd.innerHTML = matches.map(c => `
     <div class="customer-option" onclick="selectCustomer('${c.id}')">
       <div class="cname">${esc(c.name)}</div>
       ${c.contact?`<div class="ccontact">${esc(c.contact)}</div>`:''}
@@ -371,8 +420,8 @@ function saveItem(existingId) {
   const product = document.getElementById('f-product').value.trim();
   const start = parseFloat(document.getElementById('f-start').value);
   const min = parseFloat(document.getElementById('f-min').value);
-  if(!name||!product||isNaN(start)||isNaN(min)){alert('Please fill in all required fields.');return;}
-  if(min>start){alert('Minimum price cannot exceed starting price.');return;}
+  if (!name||!product||isNaN(start)||isNaN(min)) { alert('Please fill in all required fields.'); return; }
+  if (min > start) { alert('Minimum price cannot exceed starting price.'); return; }
   upsertCustomer(name, contact);
   const existing = existingId ? items.find(i=>i.id===existingId) : null;
   const item = {
@@ -392,88 +441,92 @@ function saveItem(existingId) {
     paidOut:existing?existing.paidOut:undefined,
     addedAt:existing?existing.addedAt:new Date().toISOString()
   };
-  if(existingId){items[items.findIndex(i=>i.id===existingId)]=item;}
-  else{items.push(item);}
-  saveItems();closeModal();renderAll();
+  if (existingId) { items[items.findIndex(i=>i.id===existingId)] = item; }
+  else { items.push(item); }
+  saveItems(); closeModal(); renderAll();
 }
 
 function openEditModal(id) {
-  const item=items.find(i=>i.id===id);if(!item)return;
+  const item = items.find(i=>i.id===id); if(!item) return;
   openAddModal(item);
-  document.querySelector('.modal h2').innerHTML='<i class="ti ti-edit" aria-hidden="true" style="font-size:15px;vertical-align:-2px;margin-right:6px"></i>Edit item';
-  document.querySelector('.btn-primary').setAttribute('onclick',`saveItem('${id}')`);
+  document.querySelector('.modal h2').textContent = 'Edit Item';
+  document.querySelector('.btn-primary').setAttribute('onclick', `saveItem('${id}')`);
 }
 
 function openSellModal(id) {
-  const item=items.find(i=>i.id===id);if(!item)return;
-  const today=new Date().toISOString().slice(0,10);
-  document.getElementById('modal-container').innerHTML=`
+  const item = items.find(i=>i.id===id); if(!item) return;
+  const today = new Date().toISOString().slice(0,10);
+  document.getElementById('modal-container').innerHTML = `
   <div class="overlay" onclick="if(event.target===this)closeModal()">
     <div class="modal">
-      <h2><i class="ti ti-circle-check" aria-hidden="true" style="font-size:15px;vertical-align:-2px;margin-right:6px"></i>Record sale</h2>
-      <p style="font-size:14px;color:var(--color-text-secondary);margin-bottom:.5rem">${esc(item.product)} — ${esc(item.customerName)}</p>
-      <p style="font-size:12px;color:var(--color-text-secondary);margin-bottom:1rem">Starting: ${fmtMoney(item.startPrice)} · Minimum: ${fmtMoney(item.minPrice)}</p>
-      <div class="form-grid" style="margin-top:4px">
+      <h2>Record Sale</h2>
+      <p style="font-size:14px;color:var(--text2);margin-bottom:.5rem">${esc(item.product)} — ${esc(item.customerName)}</p>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:1rem">Starting: ${fmtMoney(item.startPrice)} · Minimum: ${fmtMoney(item.minPrice)}</p>
+      <div class="form-grid">
         <div class="field"><label>Sale price ($) *</label><input id="s-price" type="number" min="${item.minPrice}" step="0.01" placeholder="${item.startPrice}" oninput="updateComm()"></div>
         <div class="field"><label>Sale date</label><input id="s-date" type="date" value="${today}"></div>
-        <div class="field"><label>Payment method</label><select id="s-pay"><option>Cash</option><option>Card</option><option>Bank transfer</option><option>Other</option></select></div>
+        <div class="field"><label>Payment method</label><select id="s-pay"><option>Cash</option><option>Card</option><option>Bank Transfer</option><option>Other</option></select></div>
         <div class="field"><label>Buyer name (optional)</label><input id="s-buyer" type="text" placeholder="Optional"></div>
       </div>
       <div class="comm-box">
-        <p style="font-size:12px;font-weight:500;color:var(--color-text-secondary);margin-bottom:8px">Commission breakdown</p>
-        <div class="comm-row"><span>Sale price</span><span id="cc-sale">—</span></div>
-        <div class="comm-row"><span>Store commission (20%)</span><span id="cc-comm" style="color:var(--color-text-danger)">—</span></div>
-        <div class="comm-row total"><span>Seller receives (80%)</span><span id="cc-seller" style="color:var(--color-text-success)">—</span></div>
+        <p style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px">Commission Breakdown</p>
+        <div class="comm-row"><span>Sale price</span><span id="cc-sale" style="font-weight:500">—</span></div>
+        <div class="comm-row"><span>Store commission (20%)</span><span id="cc-comm" style="color:var(--danger)">—</span></div>
+        <div class="comm-row total"><span>Seller receives (80%)</span><span id="cc-seller" style="color:var(--success)">—</span></div>
       </div>
       <div class="actions">
         <button class="btn" onclick="closeModal()">Cancel</button>
-        <button class="btn btn-primary" onclick="recordSale('${id}')">Record sale</button>
+        <button class="btn btn-primary" onclick="recordSale('${id}')">Record Sale</button>
       </div>
     </div>
   </div>`;
 }
 
-function updateComm(){
-  const p=parseFloat(document.getElementById('s-price').value);
-  if(isNaN(p)){['cc-sale','cc-comm','cc-seller'].forEach(id=>document.getElementById(id).textContent='—');return;}
-  document.getElementById('cc-sale').textContent=fmtMoney(p);
-  document.getElementById('cc-comm').textContent=fmtMoney(p*0.2);
-  document.getElementById('cc-seller').textContent=fmtMoney(p*0.8);
+function updateComm() {
+  const p = parseFloat(document.getElementById('s-price').value);
+  if (isNaN(p)) { ['cc-sale','cc-comm','cc-seller'].forEach(id=>document.getElementById(id).textContent='—'); return; }
+  document.getElementById('cc-sale').textContent = fmtMoney(p);
+  document.getElementById('cc-comm').textContent = fmtMoney(p*0.2);
+  document.getElementById('cc-seller').textContent = fmtMoney(p*0.8);
 }
 
-function recordSale(id){
-  const p=parseFloat(document.getElementById('s-price').value);
-  const item=items.find(i=>i.id===id);
-  if(isNaN(p)||p<=0){alert('Please enter a valid sale price.');return;}
-  if(p<item.minPrice){alert(`Sale price cannot be below the minimum of ${fmtMoney(item.minPrice)}.`);return;}
-  item.status='sold';item.salePrice=p;item.saleDate=document.getElementById('s-date').value;
-  item.paymentMethod=document.getElementById('s-pay').value;item.buyerName=document.getElementById('s-buyer').value.trim();item.paidOut=false;
-  saveItems();closeModal();renderAll();
+function recordSale(id) {
+  const p = parseFloat(document.getElementById('s-price').value);
+  const item = items.find(i=>i.id===id);
+  if (isNaN(p)||p<=0) { alert('Please enter a valid sale price.'); return; }
+  if (p < item.minPrice) { alert(`Sale price cannot be below the minimum of ${fmtMoney(item.minPrice)}.`); return; }
+  item.status='sold'; item.salePrice=p;
+  item.saleDate=document.getElementById('s-date').value;
+  item.paymentMethod=document.getElementById('s-pay').value;
+  item.buyerName=document.getElementById('s-buyer').value.trim();
+  item.paidOut=false;
+  saveItems(); closeModal(); renderAll();
 }
 
-function withdrawItem(id){
-  const item=items.find(i=>i.id===id);
-  if(!confirm(`Mark "${item.product}" as withdrawn?`))return;
-  item.status='withdrawn';saveItems();renderAll();
+function withdrawItem(id) {
+  const item = items.find(i=>i.id===id);
+  if (!confirm(`Mark "${item.product}" as withdrawn / returned to ${item.customerName}?`)) return;
+  item.status='withdrawn'; saveItems(); renderAll();
 }
 
-function markPaid(id){
-  if(!confirm('Mark seller payout as completed?'))return;
-  items.find(i=>i.id===id).paidOut=true;saveItems();renderAll();
+function markPaid(id) {
+  const item = items.find(i=>i.id===id);
+  if (!confirm(`Mark seller payout of ${fmtMoney(item.salePrice*0.8)} to ${item.customerName} as completed?`)) return;
+  item.paidOut=true; saveItems(); renderAll();
 }
 
-function deleteItem(id){
-  const item=items.find(i=>i.id===id);if(!item)return;
-  if(!confirm(`Permanently delete "${item.product}" (${item.customerName})?`))return;
-  items=items.filter(i=>i.id!==id);saveItems();renderAll();
+function deleteItem(id) {
+  const item = items.find(i=>i.id===id); if(!item) return;
+  if (!confirm(`Permanently delete "${item.product}" (${item.customerName})?\n\nThis cannot be undone.`)) return;
+  items = items.filter(i=>i.id!==id); saveItems(); renderAll();
 }
 
-function editCustomer(id){
-  const c=customers.find(x=>x.id===id);if(!c)return;
-  document.getElementById('modal-container').innerHTML=`
+function editCustomer(id) {
+  const c = customers.find(x=>x.id===id); if(!c) return;
+  document.getElementById('modal-container').innerHTML = `
   <div class="overlay" onclick="if(event.target===this)closeModal()">
     <div class="modal">
-      <h2><i class="ti ti-user" aria-hidden="true" style="font-size:15px;vertical-align:-2px;margin-right:6px"></i>Edit customer</h2>
+      <h2>Edit Customer</h2>
       <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:1rem">
         <div class="field"><label>Name *</label><input id="ec-name" type="text" value="${esc(c.name)}"></div>
         <div class="field"><label>Phone / email</label><input id="ec-contact" type="text" value="${esc(c.contact||'')}"></div>
@@ -486,34 +539,28 @@ function editCustomer(id){
   </div>`;
 }
 
-function saveCustomer(id){
-  const c=customers.find(x=>x.id===id);if(!c)return;
-  const name=document.getElementById('ec-name').value.trim();
-  if(!name){alert('Name is required.');return;}
-  const oldName=c.name;
-  c.name=name;c.contact=document.getElementById('ec-contact').value.trim();
-  items.forEach(i=>{if(i.customerName.toLowerCase()===oldName.toLowerCase())i.customerName=name;});
-  saveCusts();saveItems();closeModal();renderAll();
+function saveCustomer(id) {
+  const c = customers.find(x=>x.id===id); if(!c) return;
+  const name = document.getElementById('ec-name').value.trim();
+  if (!name) { alert('Name is required.'); return; }
+  const oldName = c.name;
+  c.name = name; c.contact = document.getElementById('ec-contact').value.trim();
+  items.forEach(i => { if(i.customerName.toLowerCase()===oldName.toLowerCase()) i.customerName=name; });
+  saveCusts(); saveItems(); closeModal(); renderAll();
 }
 
-function deleteCustomer(id){
-  const c=customers.find(x=>x.id===id);if(!c)return;
-  const linked=items.filter(i=>i.customerName.toLowerCase()===c.name.toLowerCase()).length;
-  const msg=linked?`Delete ${c.name}? They have ${linked} item(s) on file — the items won't be deleted, just the customer record.`:`Delete ${c.name}?`;
-  if(!confirm(msg))return;
-  customers=customers.filter(x=>x.id!==id);saveCusts();renderAll();
+function deleteCustomer(id) {
+  const c = customers.find(x=>x.id===id); if(!c) return;
+  const linked = items.filter(i=>i.customerName.toLowerCase()===c.name.toLowerCase()).length;
+  const msg = linked
+    ? `Delete ${c.name}? They have ${linked} item(s) on file — the items won't be deleted, just the customer record.`
+    : `Permanently delete ${c.name}?`;
+  if (!confirm(msg)) return;
+  customers = customers.filter(x=>x.id!==id); saveCusts(); renderAll();
 }
 
-if(!items.length){
-  items=[
-    {id:genId(),customerName:'Sarah Mitchell',contact:'0412 345 678',product:'Cabrinha Switchblade 12m',category:'Kite',condition:'Good',brand:'Cabrinha',startPrice:800,minPrice:600,dateBroughtIn:'2026-04-15',expiryDate:'2026-07-15',notes:'2023 model, includes bar and lines',status:'active',addedAt:'2026-04-15T09:00:00Z'},
-    {id:genId(),customerName:'James Thornton',contact:'james@email.com',product:'Lift eFoil 4\'2"',category:'Foil',condition:'Like New',brand:'Lift',startPrice:4500,minPrice:3800,dateBroughtIn:'2026-05-01',expiryDate:'2026-08-01',notes:'Only 10 hours use',status:'active',addedAt:'2026-05-01T10:00:00Z'},
-    {id:genId(),customerName:'Priya Patel',contact:'0498 001 002',product:'Red Paddle Co 10\'8"',category:'SUP',condition:'Good',brand:'Red Paddle Co',startPrice:950,minPrice:750,dateBroughtIn:'2026-04-20',expiryDate:'2026-07-20',notes:'Inflatable, pump and bag included',status:'sold',salePrice:880,saleDate:'2026-05-05',paymentMethod:'Card',paidOut:false,addedAt:'2026-04-20T11:00:00Z'},
-    {id:genId(),customerName:'Tom Keller',contact:'tom.k@mail.com',product:'JS Industries 6\'2" Monsta',category:'Surf',condition:'Good',brand:'JS Industries',startPrice:550,minPrice:400,dateBroughtIn:'2026-03-10',expiryDate:'2026-06-10',notes:'Quad fin setup',status:'sold',salePrice:500,saleDate:'2026-04-22',paymentMethod:'Cash',paidOut:true,addedAt:'2026-03-10T08:00:00Z'}
-  ];
-  saveItems();
-  items.forEach(i=>upsertCustomer(i.customerName,i.contact));
-}
-
+loadData();
 renderAll();
 </script>
+</body>
+</html>
