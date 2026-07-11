@@ -167,12 +167,13 @@
   <div id="tab-customers" style="display:none">
     <div class="search-row">
       <input type="text" id="cust-search" placeholder="Search customers…" oninput="renderCustomers()">
+      <button class="btn btn-primary" onclick="openAddCustomerModal()">+ Add Customer</button>
     </div>
     <div class="card" style="padding:0; overflow:hidden;">
       <div class="tbl-wrap">
         <table>
-          <colgroup><col style="width:22%"><col style="width:22%"><col style="width:10%"><col style="width:10%"><col style="width:14%"><col style="width:22%"></colgroup>
-          <thead><tr><th>Name</th><th>Contact</th><th>Items</th><th>Sold</th><th>Total Sales</th><th>Actions</th></tr></thead>
+          <colgroup><col style="width:18%"><col style="width:20%"><col style="width:14%"><col style="width:8%"><col style="width:8%"><col style="width:12%"><col style="width:20%"></colgroup>
+          <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Items</th><th>Sold</th><th>Total Sales</th><th>Actions</th></tr></thead>
           <tbody id="cust-body"></tbody>
         </table>
       </div>
@@ -193,9 +194,36 @@ let items = [];
 let customers = [];
 let filterStatus = '';
 
+function splitContact(contact) {
+  if (!contact) return { email: '', phone: '' };
+  const parts = contact.split(/[\/,]|\s{2,}/).map(s => s.trim()).filter(Boolean);
+  let email = '', phone = '';
+  parts.forEach(p => { if (/@/.test(p)) email = email || p; else phone = phone || p; });
+  if (!email && !phone) { if (/@/.test(contact)) email = contact; else phone = contact; }
+  return { email, phone };
+}
+
 function loadData() {
   try { items = JSON.parse(localStorage.getItem(ITEMS_KEY) || '[]'); } catch(e) { items = []; }
   try { customers = JSON.parse(localStorage.getItem(CUSTS_KEY) || '[]'); } catch(e) { customers = []; }
+  let migrated = false;
+  customers.forEach(c => {
+    if ((c.email===undefined || c.phone===undefined) && c.contact) {
+      const {email, phone} = splitContact(c.contact);
+      c.email = c.email || email; c.phone = c.phone || phone; migrated = true;
+    }
+    if (c.email===undefined) c.email='';
+    if (c.phone===undefined) c.phone='';
+  });
+  items.forEach(i => {
+    if ((i.customerEmail===undefined || i.customerPhone===undefined) && i.contact) {
+      const {email, phone} = splitContact(i.contact);
+      i.customerEmail = i.customerEmail || email; i.customerPhone = i.customerPhone || phone; migrated = true;
+    }
+    if (i.customerEmail===undefined) i.customerEmail='';
+    if (i.customerPhone===undefined) i.customerPhone='';
+  });
+  if (migrated) { saveCusts(); saveItems(); }
 }
 function saveItems() { localStorage.setItem(ITEMS_KEY, JSON.stringify(items)); }
 function saveCusts() { localStorage.setItem(CUSTS_KEY, JSON.stringify(customers)); }
@@ -204,11 +232,17 @@ function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;'
 function fmtDate(d) { if(!d) return '—'; return new Date(d+'T00:00:00').toLocaleDateString('en-AU',{day:'2-digit',month:'short',year:'2-digit'}); }
 function fmtMoney(n) { return '$' + Number(n).toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 
-function upsertCustomer(name, contact) {
-  name = name.trim(); contact = (contact||'').trim();
+function upsertCustomer(name, email, phone) {
+  name = name.trim(); email = (email||'').trim(); phone = (phone||'').trim();
   let c = customers.find(c => c.name.toLowerCase() === name.toLowerCase());
-  if (c) { if (contact && contact !== c.contact) { c.contact = contact; saveCusts(); } return c; }
-  c = { id: genId(), name, contact, createdAt: new Date().toISOString() };
+  if (c) {
+    let changed = false;
+    if (email && email !== c.email) { c.email = email; changed = true; }
+    if (phone && phone !== c.phone) { c.phone = phone; changed = true; }
+    if (changed) saveCusts();
+    return c;
+  }
+  c = { id: genId(), name, email, phone, createdAt: new Date().toISOString() };
   customers.push(c); saveCusts(); return c;
 }
 
@@ -280,20 +314,21 @@ function renderSold() {
 
 function renderCustomers() {
   const q = (document.getElementById('cust-search')?.value||'').toLowerCase();
-  const filtered = customers.filter(c => !q || c.name.toLowerCase().includes(q) || (c.contact||'').toLowerCase().includes(q));
+  const filtered = customers.filter(c => !q || c.name.toLowerCase().includes(q) || (c.email||'').toLowerCase().includes(q) || (c.phone||'').toLowerCase().includes(q));
   const tbody = document.getElementById('cust-body');
-  if (!filtered.length) { tbody.innerHTML = `<tr><td colspan="6"><div class="empty">No customers yet — they're added automatically when you create an item.</div></td></tr>`; return; }
+  if (!filtered.length) { tbody.innerHTML = `<tr><td colspan="7"><div class="empty">No customers yet — they're added automatically when you create an item.</div></td></tr>`; return; }
   tbody.innerHTML = filtered.map(c => {
     const cItems = items.filter(i => i.customerName.toLowerCase() === c.name.toLowerCase());
     const cSold = cItems.filter(i => itemStatus(i) === 'sold');
     const totalSales = cSold.reduce((s,i) => s+Number(i.salePrice||0), 0);
     return `<tr>
       <td title="${esc(c.name)}" style="font-weight:600">${esc(c.name)}</td>
-      <td title="${esc(c.contact)}">${esc(c.contact)||'—'}</td>
+      <td title="${esc(c.email)}">${esc(c.email)||'—'}</td>
+      <td title="${esc(c.phone)}">${esc(c.phone)||'—'}</td>
       <td>${cItems.length}</td><td>${cSold.length}</td>
       <td>${cSold.length ? fmtMoney(totalSales) : '—'}</td>
       <td><div class="row-actions">
-        <button class="btn btn-sm btn-primary" onclick="openAddModal({customerName:'${esc(c.name)}',contact:'${esc(c.contact)}'})">+ Item</button>
+        <button class="btn btn-sm btn-primary" onclick="openAddModal({customerName:'${esc(c.name)}',email:'${esc(c.email)}',phone:'${esc(c.phone)}'})">+ Item</button>
         <button class="btn btn-sm" onclick="editCustomer('${c.id}')">Edit</button>
         <button class="icon-btn" onclick="deleteCustomer('${c.id}')" title="Delete">🗑</button>
       </div></td></tr>`;
@@ -349,11 +384,11 @@ function openAddModal(prefill={}) {
           <input id="f-name" type="text" placeholder="Start typing a name…" value="${esc(prefill.customerName||'')}" oninput="onCustInput()" autocomplete="off">
           <div id="cust-dropdown" class="customer-dropdown" style="display:none"></div>
         </div>
-        <div id="contact-field" style="${hasPrefill?'display:none':'display:flex;flex-direction:column;gap:5px;margin-bottom:12px'}">
-          <label style="font-size:12px;color:var(--text2);font-weight:500;">Phone / email</label>
-          <input id="f-contact" type="text" placeholder="0400 000 000" value="${esc(prefill.contact||'')}">
+        <div id="contact-field" style="${hasPrefill?'display:none':'display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px'}">
+          <div class="field"><label>Email</label><input id="f-email" type="email" placeholder="name@example.com" value="${esc(prefill.email||'')}"></div>
+          <div class="field"><label>Phone</label><input id="f-phone" type="text" placeholder="0400 000 000" value="${esc(prefill.phone||'')}"></div>
         </div>
-        ${hasPrefill?`<input type="hidden" id="f-name" value="${esc(prefill.customerName||'')}"><input type="hidden" id="f-contact" value="${esc(prefill.contact||'')}">`:''}
+        ${hasPrefill?`<input type="hidden" id="f-name" value="${esc(prefill.customerName||'')}"><input type="hidden" id="f-email" value="${esc(prefill.email||'')}"><input type="hidden" id="f-phone" value="${esc(prefill.phone||'')}">`:''}
       </div>
       <div class="form-grid">
         <div class="field"><label>Product name *</label><input id="f-product" type="text" placeholder="Twin tip kite board" value="${esc(prefill.product||'')}"></div>
@@ -379,13 +414,14 @@ function clearCustomer() {
   document.getElementById('cust-field').style.flexDirection='column';
   document.getElementById('cust-field').style.gap='5px';
   document.getElementById('cust-field').style.marginBottom='12px';
-  document.getElementById('contact-field').style.display='flex';
-  document.getElementById('contact-field').style.flexDirection='column';
-  document.getElementById('contact-field').style.gap='5px';
+  document.getElementById('contact-field').style.display='grid';
+  document.getElementById('contact-field').style.gridTemplateColumns='1fr 1fr';
+  document.getElementById('contact-field').style.gap='12px';
   document.getElementById('contact-field').style.marginBottom='12px';
   const tag = document.querySelector('.customer-tag'); if(tag) tag.remove();
   document.getElementById('f-name').value='';
-  document.getElementById('f-contact').value='';
+  document.getElementById('f-email').value='';
+  document.getElementById('f-phone').value='';
   document.getElementById('f-name').focus();
 }
 
@@ -395,37 +431,47 @@ function onCustInput() {
   if (!q) { dd.style.display='none'; return; }
   const matches = customers.filter(c => c.name.toLowerCase().includes(q)).slice(0,6);
   if (!matches.length) { dd.style.display='none'; return; }
-  dd.innerHTML = matches.map(c => `
+  dd.innerHTML = matches.map(c => {
+    const details = [c.email, c.phone].filter(Boolean).join(' · ');
+    return `
     <div class="customer-option" onclick="selectCustomer('${c.id}')">
       <div class="cname">${esc(c.name)}</div>
-      ${c.contact?`<div class="ccontact">${esc(c.contact)}</div>`:''}
-    </div>`).join('');
+      ${details?`<div class="ccontact">${esc(details)}</div>`:''}
+    </div>`;
+  }).join('');
   dd.style.display='block';
 }
 
 function selectCustomer(id) {
   const c = customers.find(x=>x.id===id); if(!c) return;
   document.getElementById('f-name').value = c.name;
-  document.getElementById('f-contact').value = c.contact||'';
-  document.getElementById('f-contact').classList.add('autofilled');
+  document.getElementById('f-email').value = c.email||'';
+  document.getElementById('f-phone').value = c.phone||'';
+  document.getElementById('f-email').classList.add('autofilled');
+  document.getElementById('f-phone').classList.add('autofilled');
   document.getElementById('cust-dropdown').style.display='none';
-  setTimeout(()=>document.getElementById('f-contact').classList.remove('autofilled'),1500);
+  setTimeout(()=>{
+    document.getElementById('f-email').classList.remove('autofilled');
+    document.getElementById('f-phone').classList.remove('autofilled');
+  },1500);
 }
 
 function saveItem(existingId) {
   const nameEl = document.getElementById('f-name');
   const name = nameEl ? nameEl.value.trim() : '';
-  const contactEl = document.getElementById('f-contact');
-  const contact = contactEl ? contactEl.value.trim() : '';
+  const emailEl = document.getElementById('f-email');
+  const email = emailEl ? emailEl.value.trim() : '';
+  const phoneEl = document.getElementById('f-phone');
+  const phone = phoneEl ? phoneEl.value.trim() : '';
   const product = document.getElementById('f-product').value.trim();
   const start = parseFloat(document.getElementById('f-start').value);
   const min = parseFloat(document.getElementById('f-min').value);
   if (!name||!product||isNaN(start)||isNaN(min)) { alert('Please fill in all required fields.'); return; }
   if (min > start) { alert('Minimum price cannot exceed starting price.'); return; }
-  upsertCustomer(name, contact);
+  upsertCustomer(name, email, phone);
   const existing = existingId ? items.find(i=>i.id===existingId) : null;
   const item = {
-    id: existingId||genId(), customerName:name, contact,
+    id: existingId||genId(), customerName:name, customerEmail:email, customerPhone:phone,
     product, category:document.getElementById('f-cat').value,
     condition:document.getElementById('f-cond').value,
     brand:document.getElementById('f-brand').value.trim(),
@@ -521,6 +567,39 @@ function deleteItem(id) {
   items = items.filter(i=>i.id!==id); saveItems(); renderAll();
 }
 
+function openAddCustomerModal() {
+  document.getElementById('modal-container').innerHTML = `
+  <div class="overlay" onclick="if(event.target===this)closeModal()">
+    <div class="modal">
+      <h2>Add Customer</h2>
+      <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:1rem">
+        <div class="field"><label>Name *</label><input id="nc-name" type="text" placeholder="Full name"></div>
+        <div class="form-grid">
+          <div class="field"><label>Email</label><input id="nc-email" type="email" placeholder="name@example.com"></div>
+          <div class="field"><label>Phone</label><input id="nc-phone" type="text" placeholder="0400 000 000"></div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveNewCustomer()">Save</button>
+      </div>
+    </div>
+  </div>`;
+  setTimeout(()=>document.getElementById('nc-name').focus(),0);
+}
+
+function saveNewCustomer() {
+  const name = document.getElementById('nc-name').value.trim();
+  if (!name) { alert('Name is required.'); return; }
+  const email = document.getElementById('nc-email').value.trim();
+  const phone = document.getElementById('nc-phone').value.trim();
+  if (customers.some(c => c.name.toLowerCase() === name.toLowerCase())) {
+    alert('A customer with this name already exists.'); return;
+  }
+  upsertCustomer(name, email, phone);
+  closeModal(); renderAll();
+}
+
 function editCustomer(id) {
   const c = customers.find(x=>x.id===id); if(!c) return;
   document.getElementById('modal-container').innerHTML = `
@@ -529,7 +608,10 @@ function editCustomer(id) {
       <h2>Edit Customer</h2>
       <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:1rem">
         <div class="field"><label>Name *</label><input id="ec-name" type="text" value="${esc(c.name)}"></div>
-        <div class="field"><label>Phone / email</label><input id="ec-contact" type="text" value="${esc(c.contact||'')}"></div>
+        <div class="form-grid">
+          <div class="field"><label>Email</label><input id="ec-email" type="email" value="${esc(c.email||'')}"></div>
+          <div class="field"><label>Phone</label><input id="ec-phone" type="text" value="${esc(c.phone||'')}"></div>
+        </div>
       </div>
       <div class="actions">
         <button class="btn" onclick="closeModal()">Cancel</button>
@@ -544,8 +626,10 @@ function saveCustomer(id) {
   const name = document.getElementById('ec-name').value.trim();
   if (!name) { alert('Name is required.'); return; }
   const oldName = c.name;
-  c.name = name; c.contact = document.getElementById('ec-contact').value.trim();
-  items.forEach(i => { if(i.customerName.toLowerCase()===oldName.toLowerCase()) i.customerName=name; });
+  c.name = name;
+  c.email = document.getElementById('ec-email').value.trim();
+  c.phone = document.getElementById('ec-phone').value.trim();
+  items.forEach(i => { if(i.customerName.toLowerCase()===oldName.toLowerCase()) { i.customerName=name; i.customerEmail=c.email; i.customerPhone=c.phone; } });
   saveCusts(); saveItems(); closeModal(); renderAll();
 }
 
